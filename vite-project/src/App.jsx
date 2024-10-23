@@ -7,42 +7,100 @@ import VoterListPage from './pages/voterlist.jsx';
 import CandidatePage from './pages/candidatelist.jsx';
 import ConductPage from './pages/conduct.jsx';
 import VotecastPage from './pages/votecast.jsx';
-import PrivateRoute from './PrivateRoute.jsx';
+import ProtectedRoute from './PrivateRoute.jsx';
 import SuccPage from './pages/success.jsx';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Replace with actual authentication logic
+  // Replace with actual authentication logic
+  const [auth, setAuth] = useState({
+    isAuthenticated: true,
+    role: 'voter' // 'admin' or 'voter'
+  });
+
+  // Define route access configurations
+  const routeConfig = {
+    admin: {
+      allowedRoutes: ['/overview', '/voter', '/conduct', '/candidate'],
+      defaultRoute: '/overview'
+    },
+    voter: {
+      allowedRoutes: ['/votecast', '/candidate', '/success'],
+      defaultRoute: '/votecast'
+    }
+  };
 
   return (
     <BrowserRouter>
       <div className="flex">
-        <Sidemenu />
+        <Sidemenu userRole={auth.role} />
         <main className="flex-1">
           <Routes>
-            <Route
-              path="/"
+            {/* Public routes */}
+            <Route 
+              path="/" 
               element={
-                isAuthenticated ? <Overview /> : <Navigate to="/candidate" />
-              }
+                <Navigate 
+                  to={auth.isAuthenticated ? routeConfig[auth.role].defaultRoute : '/candidate'} 
+                />
+              } 
             />
             <Route path="/candidate" element={<CandidatePage />} />
-            <Route path="/votecast" element={<VotecastPage />} />
-            <Route path='/success' element={<SuccPage />} />
+
+            {/* Admin routes */}
+            <Route
+              path="/overview"
+              element={
+                <ProtectedRoute
+                  element={Overview}
+                  isAuthenticated={auth.isAuthenticated}
+                  requiredRole="admin"
+                  userRole={auth.role}
+                />
+              }
+            />
             <Route
               path="/voter"
               element={
-                <PrivateRoute
+                <ProtectedRoute
                   element={VoterListPage}
-                  isAuthenticated={isAuthenticated}
+                  isAuthenticated={auth.isAuthenticated}
+                  requiredRole="admin"
+                  userRole={auth.role}
                 />
               }
             />
             <Route
               path="/conduct"
               element={
-                <PrivateRoute
+                <ProtectedRoute
                   element={ConductPage}
-                  isAuthenticated={isAuthenticated}
+                  isAuthenticated={auth.isAuthenticated}
+                  requiredRole="admin"
+                  userRole={auth.role}
+                />
+              }
+            />
+
+            {/* Voter routes */}
+            <Route
+              path="/votecast"
+              element={
+                <ProtectedRoute
+                  element={VotecastPage}
+                  isAuthenticated={auth.isAuthenticated}
+                  requiredRole="voter"
+                  userRole={auth.role}
+                />
+              }
+            />
+            <Route
+              path="/success"
+              element={
+                <ProtectedRoute
+                  element={SuccPage}
+                  isAuthenticated={auth.isAuthenticated}
+                  requiredRole="voter"
+                  userRole={auth.role}
                 />
               }
             />
