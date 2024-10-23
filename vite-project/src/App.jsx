@@ -11,7 +11,7 @@ import PrivateRoute from './PrivateRoute.jsx';
 import SuccPage from './pages/success.jsx';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Replace with actual authentication logic
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Replace with actual authentication logic
 
   return (
     <BrowserRouter>
@@ -27,6 +27,25 @@ function App() {
             />
             <Route path="/candidate" element={<CandidatePage />} />
             <Route path="/votecast" element={<VotecastPage />} />
+            <Route path='/success' element={<SuccPage />} />
+            <Route
+              path="/voter"
+              element={
+                <PrivateRoute
+                  element={VoterListPage}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+            <Route
+              path="/conduct"
+              element={
+                <PrivateRoute
+                  element={ConductPage}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
           </Routes>
         </main>
       </div>
