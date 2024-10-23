@@ -1,11 +1,10 @@
-import * as React from 'react';
-import { TextField } from '@mui/material';
-import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import React from 'react';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { renderTimeViewClock } from '@mui/x-date-pickers/timeViewRenderers';
-import { Button, Box, Typography, Container, Paper } from '@mui/material';
+import { TextField, Button, Box, Typography, Container, Paper } from '@mui/material';
 import dayjs from 'dayjs';
 
 export default function ElectionForm() {
@@ -23,63 +22,82 @@ export default function ElectionForm() {
   };
 
   return (
-    <Container maxWidth="md">
-      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Box component="form" onSubmit={handleSubmit} sx={{ '& > :not(style)': { m: 2 } }}>
-          <Typography variant="h4" gutterBottom>
-            Election Title
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 4, 
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper'
+        }}
+      >
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, letterSpacing: '-0.02em' }}>
+            Create Election
           </Typography>
           
           <TextField
             fullWidth
-            label="Add a title here"
+            label="Election Title"
             variant="outlined"
             value={electionTitle}
             onChange={(e) => setElectionTitle(e.target.value)}
-            sx={{ mb: 4 }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 1,
+              }
+            }}
           />
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DemoContainer components={['DateTimePicker']}>
-              <DateTimePicker
-                label="Start Date and Time"
-                value={startDate}
-                onChange={(newValue) => setStartDate(newValue)}
-                viewRenderers={{
-                  hours: renderTimeViewClock,
-                  minutes: renderTimeViewClock,
-                  seconds: renderTimeViewClock,
-                }}
-                sx={{ width: '100%' }}
-              />
-            </DemoContainer>
-
-            <DemoContainer components={['DateTimePicker']}>
-              <DateTimePicker
-                label="End Date and Time"
-                value={endDate}
-                onChange={(newValue) => setEndDate(newValue)}
-                viewRenderers={{
-                  hours: renderTimeViewClock,
-                  minutes: renderTimeViewClock,
-                  seconds: renderTimeViewClock,
-                }}
-                sx={{ width: '100%' }}
-              />
-            </DemoContainer>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <DemoContainer components={['DateTimePicker']}>
+                <DateTimePicker
+                  label="Start Date and Time"
+                  value={startDate}
+                  onChange={(newValue) => setStartDate(newValue)}
+                  viewRenderers={{
+                    hours: renderTimeViewClock,
+                    minutes: renderTimeViewClock,
+                    seconds: renderTimeViewClock,
+                  }}
+                  sx={{ width: '100%' }}
+                />
+              </DemoContainer>
+              
+              <DemoContainer components={['DateTimePicker']}>
+                <DateTimePicker
+                  label="End Date and Time"
+                  value={endDate}
+                  onChange={(newValue) => setEndDate(newValue)}
+                  viewRenderers={{
+                    hours: renderTimeViewClock,
+                    minutes: renderTimeViewClock,
+                    seconds: renderTimeViewClock,
+                  }}
+                  sx={{ width: '100%' }}
+                />
+              </DemoContainer>
+            </Box>
           </LocalizationProvider>
 
           <Button
             type="submit"
             variant="contained"
-            fullWidth
+            size="large"
             sx={{
-              mt: 4,
-              bgcolor: '#dc2626', // red-600
-              '&:hover': {
-                bgcolor: '#b91c1c', // red-700
-              },
+              mt: 2,
               py: 1.5,
+              bgcolor: 'primary.main',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              },
+              borderRadius: 1,
+              textTransform: 'none',
+              fontSize: '1.1rem',
+              fontWeight: 500
             }}
           >
             Conduct Election

@@ -1,7 +1,7 @@
 // Sidemenu.jsx
 import React from 'react';
 import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import { Home, User, UserPlus, PieChart, Menu as MenuIcon, X } from 'lucide-react';
+import { Home, User, UserPlus, ClipboardList,PieChart, Menu as MenuIcon, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidemenu = () => {
@@ -75,7 +75,7 @@ const Sidemenu = () => {
             <span className="text-sm font-medium">Candidate</span>
           </MenuItem>
           <MenuItem 
-            icon={<UserPlus className="w-5 h-5" />}
+            icon={<ClipboardList className="w-5 h-5" />}
             className={`px-4 py-2 ${isActive('/conduct') ? 'bg-blue-50' : ''}`}
             onClick={() => navigate('/conduct')}
           >
