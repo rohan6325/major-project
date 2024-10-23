@@ -74,6 +74,13 @@ const Sidemenu = () => {
           >
             <span className="text-sm font-medium">Candidate</span>
           </MenuItem>
+          <MenuItem 
+            icon={<UserPlus className="w-5 h-5" />}
+            className={`px-4 py-2 ${isActive('/conduct') ? 'bg-blue-50' : ''}`}
+            onClick={() => navigate('/conduct')}
+          >
+            <span className="text-sm font-medium">Conduct</span>
+          </MenuItem>
         
         </Menu>
       </Sidebar>

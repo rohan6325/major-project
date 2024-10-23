@@ -5,7 +5,7 @@ import Overview from './pages/Overview.jsx';
 import Sidemenu from './components/sidebar.jsx';
 import VoterListPage from './pages/voterlist.jsx';
 import CandidatePage from './pages/candidatelist.jsx';
-// import StatisticsPage from './pages/StatisticsPage.jsx';
+import ConductPage from './pages/conduct.jsx';
 
 function App() {
   return (
@@ -17,7 +17,7 @@ function App() {
             <Route path="/" element={<Overview />} />
             <Route path="/voter" element={<VoterListPage />} />
             <Route path="/candidate" element={<CandidatePage />} />
-            {/* <Route path="/statistics" element={<StatisticsPage />} /> */}
+            <Route path="/conduct" element={<ConductPage />} />
           </Routes>
         </main>
       </div>
