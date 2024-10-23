@@ -39,7 +39,7 @@ const Sidemenu = () => {
       >
         <div className="px-4 py-6">
           <h1 className={`text-xl font-bold text-blue-600 transition-all duration-200 ${collapsed ? 'text-center' : ''}`}>
-            {collapsed ? 'TV' : 'TRUEVote'}
+            {collapsed ? 'Tru' : 'TRUVote'}
           </h1>
         </div>
         <Menu
@@ -74,13 +74,7 @@ const Sidemenu = () => {
           >
             <span className="text-sm font-medium">Candidate</span>
           </MenuItem>
-          <MenuItem 
-            icon={<PieChart className="w-5 h-5" />}
-            className={`px-4 py-2 ${isActive('/statistics') ? 'bg-blue-50' : ''}`}
-            onClick={() => navigate('/statistics')}
-          >
-            <span className="text-sm font-medium">Statistics</span>
-          </MenuItem>
+        
         </Menu>
       </Sidebar>
     </div>
