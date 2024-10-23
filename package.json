@@ -4,6 +4,7 @@
     "@emotion/styled": "^11.13.0",
     "@mui/material": "^6.1.5",
     "@mui/x-date-pickers": "^7.21.0",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "recharts": "^2.13.0"
   }
 }
