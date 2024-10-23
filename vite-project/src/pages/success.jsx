@@ -63,84 +63,88 @@ const VoteConfirmation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* PDF Content Container */}
-        <div ref={contentRef} className="bg-white rounded-xl shadow-lg overflow-hidden p-8" style={{ minHeight: '842px' }}>
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-3xl font-bold text-gray-800">
-              Your Vote has been cast Successfully!
-            </h1>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
+    <div className="w-full max-w-2xl">
+      {/* PDF Content Container */}
+      <div 
+        ref={contentRef} 
+        className="bg-white rounded-xl shadow-lg overflow-hidden p-8"
+        style={{ minHeight: 'auto' }} // Changed from fixed height to auto
+      >
+        {/* Header */}
+        <div className="text-center mb-8"> {/* Reduced margin bottom */}
+          <h1 className="text-3xl font-bold text-gray-800">
+            Your Vote has been cast Successfully!
+          </h1>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-6"> {/* Reduced spacing */}
+          <div className="space-y-4"> {/* Reduced spacing */}
+            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+              <span className="text-gray-600 font-medium">Voter Id:</span>
+              <span className="text-gray-900 font-semibold">adfadfa</span>
+            </div>
+            
+            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+              <span className="text-gray-600 font-medium">Vote Cast for:</span>
+              <span className="text-gray-900 font-semibold">Etews</span>
+            </div>
+            
+            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+              <span className="text-gray-600 font-medium">DateTimeStamp:</span>
+              <span className="text-gray-900 font-semibold">28/06/24</span>
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="space-y-8">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-600 font-medium">Voter Id:</span>
-                <span className="text-gray-900 font-semibold">adfadfa</span>
-              </div>
-              
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-600 font-medium">Vote Cast for:</span>
-                <span className="text-gray-900 font-semibold">Etews</span>
-              </div>
-              
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-600 font-medium">DateTimeStamp:</span>
-                <span className="text-gray-900 font-semibold">28/06/24</span>
-              </div>
-            </div>
-
-            {/* Buttons - Only visible in web view */}
-            <div className="flex gap-4 pt-4 print:hidden">
-              <button
-                onClick={handleShare}
-                className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                {showCopySuccess ? (
-                  <>
-                    <Check className="w-5 h-5 text-green-500" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Share className="w-5 h-5" />
-                    Share Link
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handlePrint}
-                className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-              >
-                <Printer className="w-5 h-5" />
-                Print Receipt
-              </button>
-            </div>
-
-            {/* Encryption Notice */}
-            <div className="mt-12 text-center text-gray-600">
-              <p className="flex items-center justify-center gap-2">
-                Vote Encrypted Securely though Shadow Cipher
-                <span role="img" aria-label="locked" className="text-xl">🔒</span>
-              </p>
-            </div>
-
-            {/* PDF Generation Timestamp - Hidden by default */}
-            <div 
-              ref={timestampRef} 
-              className="mt-8 text-center text-sm text-gray-500 pt-4"
-              style={{ display: 'none' }}
+          {/* Buttons */}
+          <div className="flex gap-4 pt-4 print:hidden">
+            <button
+              onClick={handleShare}
+              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              PDF Generated on: {/* This will be filled dynamically */}
-            </div>
+              {showCopySuccess ? (
+                <>
+                  <Check className="w-5 h-5 text-green-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Share className="w-5 h-5" />
+                  Share Link
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              <Printer className="w-5 h-5" />
+              Print Receipt
+            </button>
+          </div>
+
+          {/* Encryption Notice */}
+          <div className="mt-6 text-center text-gray-600"> {/* Reduced margin top */}
+            <p className="flex items-center justify-center gap-2">
+              Vote Encrypted Securely though Shadow Cipher
+              <span role="img" aria-label="locked" className="text-xl">🔒</span>
+            </p>
+          </div>
+
+          {/* PDF Generation Timestamp */}
+          <div 
+            ref={timestampRef} 
+            className="mt-4 text-center text-sm text-gray-500"
+            style={{ display: 'none' }}
+          >
+            PDF Generated on: {/* This will be filled dynamically */}
           </div>
         </div>
       </div>
     </div>
+  </div>
   );
 };
 
