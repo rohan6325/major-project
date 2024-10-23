@@ -1,32 +1,32 @@
 // App.jsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
-import Overview from './pages/Overview.jsx';
-import Sidemenu from './components/sidebar.jsx';
-import VoterListPage from './pages/voterlist.jsx';
-import CandidatePage from './pages/candidatelist.jsx';
-import ConductPage from './pages/conduct.jsx';
-import VotecastPage from './pages/votecast.jsx';
-import ProtectedRoute from './PrivateRoute.jsx';
-import SuccPage from './pages/success.jsx';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
+import Overview from "./pages/Overview.jsx";
+import Sidemenu from "./components/sidebar.jsx";
+import VoterListPage from "./pages/voterlist.jsx";
+import CandidatePage from "./pages/candidatelist.jsx";
+import ConductPage from "./pages/conduct.jsx";
+import VotecastPage from "./pages/votecast.jsx";
+import ProtectedRoute from "./PrivateRoute.jsx";
+import SuccPage from "./pages/success.jsx";
 
 function App() {
   // Replace with actual authentication logic
   const [auth, setAuth] = useState({
     isAuthenticated: true,
-    role: 'voter' // 'admin' or 'voter'
+    role: "voter", // 'admin' or 'voter'
   });
 
   // Define route access configurations
   const routeConfig = {
     admin: {
-      allowedRoutes: ['/overview', '/voter', '/conduct', '/candidate'],
-      defaultRoute: '/overview'
+      allowedRoutes: ["/overview", "/voter", "/conduct", "/candidate"],
+      defaultRoute: "/overview",
     },
     voter: {
-      allowedRoutes: ['/votecast', '/candidate', '/success'],
-      defaultRoute: '/votecast'
-    }
+      allowedRoutes: ["/votecast", "/success"],
+      defaultRoute: "/votecast",
+    },
   };
 
   return (
@@ -36,15 +36,29 @@ function App() {
         <main className="flex-1">
           <Routes>
             {/* Public routes */}
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
-                <Navigate 
-                  to={auth.isAuthenticated ? routeConfig[auth.role].defaultRoute : '/candidate'} 
+                <Navigate
+                  to={
+                    auth.isAuthenticated
+                      ? routeConfig[auth.role].defaultRoute
+                      : "/candidate"
+                  }
                 />
-              } 
+              }
             />
-            <Route path="/candidate" element={<CandidatePage />} />
+            <Route
+              path="/candidate"
+              element={
+                <ProtectedRoute
+                  element={CandidatePage}
+                  isAuthenticated={auth.isAuthenticated}
+                  requiredRole="admin"
+                  userRole={auth.role}
+                />
+              }
+            />
 
             {/* Admin routes */}
             <Route
