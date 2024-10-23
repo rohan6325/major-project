@@ -7,6 +7,7 @@ import VoterListPage from './pages/voterlist.jsx';
 import CandidatePage from './pages/candidatelist.jsx';
 import ConductPage from './pages/conduct.jsx';
 import VotecastPage from './pages/votecast.jsx';
+import SuccPage from './pages/success.jsx';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/candidate" element={<CandidatePage />} />
             <Route path="/conduct" element={<ConductPage />} />
             <Route path="/votecast" element={<VotecastPage />} />
+            <Route path="/success" element={<SuccPage />} />
           </Routes>
         </main>
       </div>
