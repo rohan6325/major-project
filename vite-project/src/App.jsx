@@ -6,6 +6,7 @@ import Sidemenu from './components/sidebar.jsx';
 import VoterListPage from './pages/voterlist.jsx';
 import CandidatePage from './pages/candidatelist.jsx';
 import ConductPage from './pages/conduct.jsx';
+import VotecastPage from './pages/votecast.jsx';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route path="/voter" element={<VoterListPage />} />
             <Route path="/candidate" element={<CandidatePage />} />
             <Route path="/conduct" element={<ConductPage />} />
+            <Route path="/votecast" element={<VotecastPage />} />
           </Routes>
         </main>
       </div>
