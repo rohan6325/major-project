@@ -1,6 +1,6 @@
 // App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Overview from "./pages/Overview.jsx";
 import Sidemenu from "./components/sidebar.jsx";
 import VoterListPage from "./pages/voterlist.jsx";
@@ -10,7 +10,6 @@ import VotecastPage from "./pages/votecast.jsx";
 import ProtectedRoute from "./PrivateRoute.jsx";
 import SuccPage from "./pages/success.jsx";
 import SignIn from "./pages/authentication.jsx";
-import supabase from "./utils/supabase.js";
 
 function App() {
   // Replace with actual authentication logic
@@ -18,43 +17,6 @@ function App() {
     isAuthenticated: false,
     role: "", // 'admin' or 'voter'
   });
-
-  useEffect(() => {
-    // Check for an existing session on page load
-    const session = supabase.auth.session();
-
-    if (session) {
-      // Check if the user is an admin or voter
-      setAuth({
-        isAuthenticated: true,
-        role: session.user?.role || "voter", // Assume 'voter' if no role is defined
-      });
-    }
-
-    // Listen to changes in the authentication state (login/logout)
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          // Assume role logic is implemented in your database
-          // You can also fetch the user's role if it's stored separately
-          const userRole = session.user.role || "voter";
-          setAuth({
-            isAuthenticated: true,
-            role: userRole,
-          });
-        } else if (event === "SIGNED_OUT") {
-          setAuth({
-            isAuthenticated: false,
-            role: null,
-          });
-        }
-      }
-    );
-
-    return () => {
-      authListener?.unsubscribe();
-    };
-  }, []);
 
   // Define route access configurations
   const routeConfig = {
