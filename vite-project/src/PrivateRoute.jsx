@@ -9,7 +9,7 @@ const ProtectedRoute = ({
   ...rest 
 }) => {
   if (!isAuthenticated) {
-    return <Navigate to="/candidate" />;
+    return <Navigate to="/signin" />;
   }
 
   if (requiredRole && userRole !== requiredRole) {
