@@ -198,41 +198,63 @@ def serialize_private_key(private_key):
 def create_admin():
     data = request.json
     username = data.get('username')
-    password = data.get('password')  
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
 
     # Hash the password
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    
-    # Generate keypair for the admin
-    # public_key, private_key = election_system.generate_new_keypair()
-    
-    # Save private key to a secure location
-    # key_directory = "keys"
-    
-    # Ensure the 'keys' directory exists
-    # if not os.path.exists(key_directory):
-    #     os.makedirs(key_directory)  # Create the directory if it doesn't exist
-    
-    # Save private key to a secure location
-    # private_key_location = os.path.join(key_directory, f"admin_{uuid.uuid4()}.key")
-    
+
     try:
+        # Generate a unique admin ID
+        admin_id = str(uuid.uuid4())
+
+        # Prepare the admin data for insertion
         admin_data = {
-            'admin_id': str(uuid.uuid4()),
+            'admin_id': admin_id,
             'username': username,
-            'password': hashed_password,  # Hash this in production
-            # 'private_key_location': private_key_location,
+            'password': hashed_password,
             'created_at': datetime.now().isoformat()
         }
-        
+
+        # Insert admin data into Supabase Admin table
         result = supabase.table('Admin').insert(admin_data).execute()
-        
-        # In production, store private_key securely
-        with open(private_key_location, 'w') as f:
-            f.write(serialize_private_key(private_key))
-        
-        return jsonify({'success': True, 'admin_id': admin_data['admin_id']})
-    
+
+        # Check if the insertion was successful
+        if result.get('status_code', 200) == 200:
+            return jsonify({'success': True, 'admin_id': admin_data['admin_id']})
+        else:
+            return jsonify({'error': 'Failed to create admin account'}), 500
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
+
+    try:
+        # Retrieve the admin data from the Supabase Admin table
+        result = supabase.table('Admin').select('*').eq('username', username).execute()
+
+        # Check if the admin exists
+        if not result.data:
+            return jsonify({'error': 'Admin not found'}), 404
+
+        admin_data = result.data[0]
+
+        # Check if the password matches
+        if bcrypt.checkpw(password.encode('utf-8'), admin_data['password'].encode('utf-8')):
+            return jsonify({'success': True, 'admin_id': admin_data['admin_id']})
+        else:
+            return jsonify({'error': 'Invalid password'}), 401
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
