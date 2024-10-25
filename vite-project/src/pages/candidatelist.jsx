@@ -1,33 +1,55 @@
 // CandidateListPage.jsx
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 import AddCandidateModal from '../components/pop2.jsx';
+import axios from 'axios';
 
 const CandidateListPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [candidates, setCandidates] = useState([
-    {
-      id: 'C001',
-      name: 'Sarah Mitchell',
-      partyName: 'Progressive Party',
-      avatarUrl: '/api/placeholder/40/40'
-    },
-    {
-      id: 'C002',
-      name: 'James Wilson',
-      partyName: 'Liberty Alliance',
-      avatarUrl: '/api/placeholder/40/40'
-    }
-  ]);
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const serverUrl = import.meta.env.VITE_SERVER_URL;
+  const electionId = localStorage.getItem('election_id'); // Retrieve the election ID from local storage
 
-  const handleAddCandidate = (newCandidate) => {
-    setCandidates([...candidates, newCandidate]);
-    setIsModalOpen(false);
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      try {
+        const response = await axios.get(`${serverUrl}/api/candidates/${electionId}`);
+        setCandidates(response.data.candidates);
+      } catch (error) {
+        setError('Failed to fetch candidates. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCandidates();
+  }, [electionId, serverUrl, candidates]);
+
+  const handleAddCandidate = async (newCandidate) => {
+    try {
+      // Call your API to add a candidate
+      console.log(newCandidate)
+      const response = await axios.post(`${serverUrl}/api/candidate/create`, {...newCandidate, election_id:electionId}); // Adjust the endpoint if necessary
+      setCandidates([...candidates, response.data]);
+      setIsModalOpen(false);
+    } catch (error) {
+      setError('Failed to add candidate. Please try again.');
+    }
   };
 
   const handleRemoveCandidate = (candidateId) => {
     setCandidates(candidates.filter(candidate => candidate.id !== candidateId));
   };
+
+  if (loading) {
+    return <div>Loading candidates...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
 
   return (
     <div className="px-4 py-10 sm:px-6 lg:px-8">
@@ -83,20 +105,20 @@ const CandidateListPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {candidates.map((candidate) => (
-                    <tr key={candidate.id}>
+                    <tr key={candidate.candidate_id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <img
                           className="h-10 w-10 rounded-full"
-                          src={candidate.avatarUrl}
+                          src={candidate.avatar_url}
                           alt={`${candidate.name}'s avatar`}
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{candidate.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{candidate.candidate_id}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{candidate.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{candidate.partyName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{candidate.party_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                         <button
-                          onClick={() => handleRemoveCandidate(candidate.id)}
+                          onClick={() => handleRemoveCandidate(candidate.candidate_id)}
                           className="py-1 px-2 inline-flex justify-center items-center gap-2 rounded-md border border-transparent font-semibold bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all text-sm"
                         >
                           Remove
