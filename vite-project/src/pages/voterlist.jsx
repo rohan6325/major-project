@@ -1,39 +1,75 @@
-import React, { useState } from 'react';
-import { Search, UserPlus, Trash2 } from 'lucide-react';
-import AddVoterModal from '../components/AddVoterModal.jsx';
+import { useEffect, useState } from "react";
+import { Search, UserPlus, Trash2 } from "lucide-react";
+import AddVoterModal from "../components/AddVoterModal.jsx";
+import axios from "axios";
 
 const VoterListPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [voters, setVoters] = useState([
-    { voterId: "V001", name: "John Smith", email: "john.smith@email.com", gender: "Male" },
-    { voterId: "V002", name: "Sarah Johnson", email: "sarah.j@email.com", gender: "Female" },
-    { voterId: "V003", name: "Michael Chen", email: "m.chen@email.com", gender: "Male" },
-    { voterId: "V004", name: "Emma Wilson", email: "emma.w@email.com", gender: "Female" },
-    { voterId: "V005", name: "Alex Thompson", email: "alex.t@email.com", gender: "Non-binary" },
-  ]);
-
-  const handleAddVoter = (newVoter) => {
-    const nextId = `V${String(voters.length + 1).padStart(3, '0')}`;
-    const voterWithId = {
-      ...newVoter,
-      voterId: newVoter.voterId || nextId
+  const [searchTerm, setSearchTerm] = useState("");
+  const [voters, setVoters] = useState([]);
+  const serverUrl = import.meta.env.VITE_SERVER_URL;
+  const electionId = localStorage.getItem("election_id");
+  // Fetch voters from API when component loads
+  useEffect(() => {
+    const fetchVoters = async () => {
+      try {
+        const response = await axios.post(`${serverUrl}/api/voters`,{
+          election_id: electionId 
+        });
+        const data = await response.json()
+        console.log("Server response:", data);
+        setVoters(response.data.voters);
+        return
+      } catch (error) {
+        console.error("Error fetching voters:", error);
+      }
     };
-    setVoters([...voters, voterWithId]);
+    fetchVoters();
+  }, [electionId, serverUrl]); 
+  
+
+  const handleAddVoter = async (newVoter) => {
+
+    try {
+      // Call your API to add a candidate
+      console.log(newVoter)
+      const response = await axios.post(`${serverUrl}/api/voter/register`, {...newVoter, election_id: electionId}); // Adjust the endpoint if necessary
+
+      const addedVoter = await response.data;
+      setVoters([...voters, addedVoter]);
+      setIsModalOpen(false);
+
+    } catch (error) {
+      console.error("Error adding voter:", error);
+    }
   };
 
-  const handleDeleteVoter = (voterId) => {
-    setVoters(voters.filter(voter => voter.voterId !== voterId));
+  const handleDeleteVoter = async (voterId) => {
+    try {
+      const response = await fetch(`${serverUrl}/api/voter/${voterId}`, {
+        // <-- Include serverUrl here
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setVoters(voters.filter((voter) => voter.voterId !== voterId));
+      } else {
+        console.error("Failed to delete voter");
+      }
+    } catch (error) {
+      console.error("Error deleting voter:", error);
+    }
   };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredVoters = voters.filter(voter => 
-    voter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    voter.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    voter.voterId.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVoters = voters.filter(
+    (voter) =>
+      voter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voter.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voter.voterId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -75,7 +111,7 @@ const VoterListPage = () => {
                       onChange={handleSearch}
                     />
                   </div>
-                  <button 
+                  <button
                     type="button"
                     className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
                     onClick={() => setIsModalOpen(true)}
@@ -90,20 +126,53 @@ const VoterListPage = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Voter ID</th>
-                    <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Gender</th>
-                    <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Voter ID
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Email
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Gender
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredVoters.map((voter) => (
                     <tr key={voter.voterId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{voter.voterId}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{voter.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{voter.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{voter.gender}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                        {voter.voterId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        {voter.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        {voter.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        {voter.gender}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <button
                           onClick={() => handleDeleteVoter(voter.voterId)}
@@ -122,7 +191,16 @@ const VoterListPage = () => {
               <div className="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-t border-gray-200">
                 <div>
                   <p className="text-sm text-gray-600">
-                    Showing <span className="font-semibold text-gray-800">1</span> to <span className="font-semibold text-gray-800">{filteredVoters.length}</span> of <span className="font-semibold text-gray-800">{voters.length}</span> entries
+                    Showing{" "}
+                    <span className="font-semibold text-gray-800">1</span> to{" "}
+                    <span className="font-semibold text-gray-800">
+                      {filteredVoters.length}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold text-gray-800">
+                      {voters.length}
+                    </span>{" "}
+                    entries
                   </p>
                 </div>
 
@@ -131,8 +209,16 @@ const VoterListPage = () => {
                     type="button"
                     className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    <svg className="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="m15 18-6-6 6-6"/>
+                    <svg
+                      className="flex-shrink-0 w-4 h-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <path d="m15 18-6-6 6-6" />
                     </svg>
                     Previous
                   </button>
@@ -142,8 +228,16 @@ const VoterListPage = () => {
                     className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Next
-                    <svg className="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="m9 18 6-6-6-6"/>
+                    <svg
+                      className="flex-shrink-0 w-4 h-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <path d="m9 18 6-6-6-6" />
                     </svg>
                   </button>
                 </div>
@@ -153,7 +247,7 @@ const VoterListPage = () => {
         </div>
       </div>
 
-      <AddVoterModal 
+      <AddVoterModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddVoter}
