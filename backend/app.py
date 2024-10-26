@@ -18,8 +18,11 @@ from dotenv import load_dotenv, dotenv_values
 
 config = dotenv_values(".env")
 
+from flask import Flask, jsonify
+from flask_cors import CORS
+
 app = Flask(__name__)
-CORS(app)
+cors = CORS(app)
 
 # Initialize Supabase client
 supabase_url = config["SUPABASE_URL"]
@@ -223,7 +226,7 @@ def create_admin():
 
         # Check if the insertion was successful
         if result.get('status_code', 200) == 200:
-            return jsonify({'success': True, 'admin_id': admin_data['admin_id']})
+            return jsonify({'success': True}), 201
         else:
             return jsonify({'error': 'Failed to create admin account'}), 500
 
@@ -243,18 +246,34 @@ def admin_login():
         # Retrieve the admin data from the Supabase Admin table
         result = supabase.table('Admin').select('*').eq('username', username).execute()
 
-        # Check if the admin exists
-        if not result.data:
-            return jsonify({'error': 'Admin not found'}), 404
+        # # Check if the admin exists
+        # if not result.data:
+        #     return jsonify({'error': 'Admin not found'}), 404
 
         admin_data = result.data[0]
 
         # Check if the password matches
         if bcrypt.checkpw(password.encode('utf-8'), admin_data['password'].encode('utf-8')):
-            return jsonify({'success': True, 'admin_id': admin_data['admin_id']})
+            return jsonify({'success': True})
         else:
             return jsonify({'error': 'Invalid password'}), 401
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/election/<uuid:election_id>', methods=['GET'])
+def get_election(election_id):
+    # Fetch election details from Supabase
+    try:
+        # Query the election table for the given election_id
+        response = supabase.table('Election').select('*').eq('election_id', election_id).execute()
+        
+        # Check if any rows were returned
+        if response.data:
+            # Return the first (and presumably only) election record
+            return jsonify(response.data[0]), 200
+        else:
+            return jsonify({'error': 'Election not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -298,23 +317,210 @@ def create_election():
 @app.route('/api/voter/register', methods=['POST'])
 def register_voter():
     data = request.json
+    election_id = data.get("election_id")
     
+    # Validate that the election_id is provided and is a valid UUID
+    if not election_id:
+        return jsonify({'error': 'Election ID is required'}), 400
+
     try:
-        voter_data = {
-            'voter_id': str(uuid.uuid4()),
-            'name': data.get('name'),
-            'email': data.get('email'),
-            'gender': data.get('gender'),
-            'public_key': data.get('public_key'),
-            'created_at': datetime.now().isoformat()
-        }
+        # Validate that election_id is a valid UUID
+        election_id = uuid.UUID(election_id)
         
-        result = supabase.table('Voter').insert(voter_data).execute()
+        # Step 1: Retrieve the public key from the Election table using election_id
+        election_result = supabase.table('Election').select('public_key').eq('election_id', str(election_id)).single().execute()
         
+        election_data = election_result.data
+        
+        if election_data is None:
+            return jsonify({'error': 'Election not found'}), 404
+        
+        election_public_key = election_data['public_key']
+
+        # Step 2: Check if the voter already exists based on email
+        existing_voter_result = supabase.table('Voter').select('voter_id', 'public_key').eq('email', data.get('email')).single().execute()
+        existing_voter_data = existing_voter_result.data
+
+        if existing_voter_data:
+            # If voter exists, update the public_key
+            update_result = supabase.table('Voter').update({'public_key': election_public_key}).eq('voter_id', existing_voter_data['voter_id']).execute()
+            return jsonify({
+                'success': True,
+                'message': 'Voter public key updated',
+                'voter_id': existing_voter_data['voter_id']
+            })
+        else:
+            # If voter does not exist, create a new entry
+            voter_data = {
+                'voter_id': str(uuid.uuid4()),
+                'name': data.get('name'),
+                'email': data.get('email'),
+                'gender': data.get('gender'),
+                'public_key': election_public_key,
+                'created_at': datetime.now().isoformat()
+            }
+
+            # Insert the voter data into the Voter table
+            result = supabase.table('Voter').insert(voter_data).execute()
+
+            return jsonify({
+                'success': True,
+                'message': 'Voter registered successfully',
+                'voter_id': voter_data['voter_id']
+            })
+    
+    except ValueError:
+        return jsonify({'error': 'Invalid election_id format'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/voter', methods=['POST'])
+def get_voter_id():
+    # Get the JSON data from the request
+    if request.method == 'OPTIONS':
+        # Send the correct CORS headers for preflight requests
+        return jsonify({'status': 'OK'}), 200
+    else:
+        data = request.json
+        email = data.get('email')
+
+        # Check if email is provided
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+
+        # Fetch the voter ID from the database
+        response = supabase.table('Voter').select('voter_id').eq('email', email).execute()
+
+        if (response.data):
+            voter = response.data[0]      
+        # Check if the voter exists
+        if voter:
+            return jsonify({'voter_id': voter['voter_id']}), 200  # Adjust according to your DB schema
+        else:
+            return jsonify({'error': 'Voter not found'}), 404
+
+# @app.route('/api/voter/<voter_id>', methods=['GET'])
+# def get_voter(voter_id):
+    
+@app.route('/api/election/candidates/<voter_id>', methods=['GET'])
+def get_election_candidates(voter_id):
+    try:
+        # Query the Voter table for the voter_id
+        voter_result = supabase.table('Voter').select('*').eq('voter_id', voter_id).execute()
+        voter_data = voter_result.data
+        
+        if not voter_data:
+            return jsonify({'error': 'Voter not found'}), 404
+
+        voter_public_key = voter_data[0].get('public_key')
+
+        # Query the Election table to find the election_id, start_time, and end_time using the voter's public key
+        election_result = supabase.table('Election').select('election_id', 'start_time', 'end_time').eq('public_key', voter_public_key).execute()
+        election_data = election_result.data
+
+        if not election_data:
+            return jsonify({'error': 'Election not found'}), 404
+        
+        election_info = election_data[0]
+        election_id = election_info.get('election_id')
+        start_time = election_info.get('start_time')
+        end_time = election_info.get('end_time')
+
+        # Query the Candidate table to find all candidates for the election_id
+        candidates_result = supabase.table('Candidate').select('*').eq('election_id', election_id).execute()
+        candidates = candidates_result.data
+
+        if not candidates:
+            return jsonify({'error': 'No candidates found for this election'}), 404
+        print("time",start_time, end_time)
+        # Return candidates along with election start and end times
         return jsonify({
             'success': True,
-            'voter_id': voter_data['voter_id']
+            'candidates': candidates,
+            'start_time': start_time,
+            'end_time': end_time
         })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/voters/', methods=['POST'])
+def get_voters():
+    data = request.json
+    election_id = data.get('election_id')
+    # election_id = request.args.get('election_id')
+
+    # Validate that the election_id is provided
+    if not election_id:
+        return jsonify({'error': 'Election ID is required'}), 400
+
+    try:
+        # Validate that election_id is a valid UUID
+        election_id = uuid.UUID(election_id)
+
+        # Step 1: Retrieve the public key from the Election table using election_id
+        election_result = supabase.table('Election').select('public_key').eq('election_id', str(election_id)).single().execute()
+        
+        # Access the 'data' attribute instead of using subscripting
+        election_data = election_result.data
+        
+        if election_data is None:
+            return jsonify({'error': 'Election not found'}), 404
+        
+        election_public_key = election_data['public_key']
+
+        # Step 2: Query the Voter table to find voters whose public key matches the election's public key
+        voters_result = supabase.table('Voter').select('*').eq('public_key', election_public_key).execute()
+
+        # Access the voters data
+        voters = voters_result.data
+
+        # Step 3: Return the filtered list of voters
+        return jsonify({
+            'success': True,
+            'voters': voters
+        })
+    
+    except ValueError:
+        return jsonify({'error': 'Invalid election_id format'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/candidate/create', methods=['POST'])
+def create_candidate():
+    data = request.json  # Get the JSON data from the request
+    election_id = data.get('election_id')
+    party_name = data.get('party_name')
+    name = data.get('candidate_name')
+    # avatar_url = data.get['avatar_url']
+
+    try:
+        # Insert candidate into the Supabase candidates table
+        response = supabase.table('Candidate').insert({
+            'candidate_id': str(uuid.uuid4()),
+            'election_id': election_id,
+            'party_name': party_name,
+            'name': name,
+            # 'avatar_url': avatar_url,
+        }).execute()
+
+        # Check for errors
+        if not response.data:
+            return jsonify({'error':"something bad happended"}), 400
+
+        return jsonify({'message': 'Candidate created successfully', 'candidate': response.data}), 201
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/candidates/<election_id>', methods=['GET'])
+def get_candidates(election_id):
+    try:
+        # Query the candidates for the specified election ID
+        response = supabase.table('Candidate').select('*').eq('election_id', election_id).execute()
+        
+        # Return the list of candidates
+        return jsonify({'candidates': response.data}), 200
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
