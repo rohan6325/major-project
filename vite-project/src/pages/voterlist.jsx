@@ -15,8 +15,15 @@ const VoterListPage = () => {
       try {
         const response = await axios.post(`${serverUrl}/api/voters`,{
           election_id: electionId 
-        });
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json', // Ensure headers are set properly
+          }
+        }
+      );
         const data = await response.json()
+        console.log(response)
         console.log("Server response:", data);
         setVoters(response.data.voters);
         return
@@ -33,7 +40,7 @@ const VoterListPage = () => {
     try {
       // Call your API to add a candidate
       console.log(newVoter)
-      const response = await axios.post(`${serverUrl}/api/voter/register`, {...newVoter, election_id: electionId}); // Adjust the endpoint if necessary
+      const response = await axios.post(`${serverUrl}/api/voter/register`, {...newVoter, election_id: electionId});
 
       const addedVoter = await response.data;
       setVoters([...voters, addedVoter]);

@@ -1,5 +1,6 @@
+/* eslint-disable react/prop-types */
 import { useState } from 'react';
-import supabase from '../utils/supabase'; // Assuming the Supabase client is set up here
+// import supabase from '../utils/supabase'; // Assuming the Supabase client is set up here
 import axios from 'axios'; // For Admin Sign-In/Sign-Up requests
 
 export default function SignIn({setAuth}) {
@@ -9,26 +10,58 @@ export default function SignIn({setAuth}) {
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
   const [message, setMessage] = useState('');
   const serverUrl = import.meta.env.VITE_SERVER_URL;
+
+  const updateAuth = (authState) => {
+    setAuth(authState);
+    localStorage.setItem("auth", JSON.stringify(authState));
+  };
+
   // Voter Email Sign-In Handler
   const handleVoterSignIn = async (e) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email: voterEmail });
-      if (error) {
-        setMessage('Error signing in: ' + error.message);
-      } else {
-        setMessage('Check your email for the login link.');
+      // API call to retrieve voter ID using email
+      const response = await fetch(`${serverUrl}/api/voter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: voterEmail }),
+      });
+  
+      // Check if the response is ok
+      if (!response.ok) {
+        const errorData = await response.json();
+        setMessage('Error: ' + (errorData.error || 'Failed to retrieve voter ID'));
+        return;
       }
-
+  
+      const data = await response.json();
+      const voterId = data.voter_id; // Get the voter ID from the response
+      localStorage.setItem("voter_id", voterId)
+      // Optionally, handle voterId (e.g., store it or use it as needed)
+      console.log('Voter ID:', voterId);
+  
+      // Proceed with sign-in process
+      // const { error } = await supabase.auth.signInWithOtp({ email: voterEmail });
+      // if (error) {
+        //   setMessage('Error signing in: ' + error.message);
+      //   return;
+      // } else {
+      //   setMessage('Check your email for the login link.');
+      // }
+  
       setVoterEmail('');
-      setAuth({
+      updateAuth({
         isAuthenticated: true,
-        role: "admin",
+        role: "voter",
+        voterId: voterId, // Optionally include voterId in auth state
       });
     } catch (error) {
       setMessage('Error signing in: ' + error.message);
     }
   };
+  
 
   // Admin Sign-Up Handler
   const handleAdminSignUp = async (e) => {
@@ -44,7 +77,8 @@ export default function SignIn({setAuth}) {
         return;
       }
 
-      setAuth({
+
+      updateAuth({
         isAuthenticated: true,
         role: "admin",
       });
@@ -70,9 +104,14 @@ export default function SignIn({setAuth}) {
         return;
       }
 
-      setAuth({
+      // const data = await response.json();
+      // const admin_id = data.admin_id; // Get the voter ID from the response
+      // localStorage.setItem("admin_id", admin_id)
+      
+      updateAuth({
         isAuthenticated: true,
         role: "admin",
+        // adminId: admin_id
       });
       setMessage('Signed in as Admin successfully.');
     } catch (error) {

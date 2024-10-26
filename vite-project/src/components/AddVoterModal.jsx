@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 const AddVoterModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    voterId: '',
     name: '',
     email: '',
     gender: ''
@@ -11,7 +10,7 @@ const AddVoterModal = ({ isOpen, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ voterId: '', name: '', email: '', gender: '' });
+    setFormData({ name: '', email: '', gender: '' });
     onClose();
   };
 
@@ -47,7 +46,7 @@ const AddVoterModal = ({ isOpen, onClose, onSubmit }) => {
 
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
-              <div>
+              {/* <div>
                 <label htmlFor="voterId" className="block text-sm font-medium mb-2 text-gray-800">Voter ID</label>
                 <input
                   type="text"
@@ -58,7 +57,7 @@ const AddVoterModal = ({ isOpen, onClose, onSubmit }) => {
                   value={formData.voterId}
                   onChange={handleChange}
                 />
-              </div>
+              </div> */}
 
               <div>
                 <label htmlFor="name" className="block text-sm font-medium mb-2 text-gray-800">Name</label>

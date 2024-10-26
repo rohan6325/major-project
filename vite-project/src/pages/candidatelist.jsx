@@ -25,7 +25,7 @@ const CandidateListPage = () => {
     };
 
     fetchCandidates();
-  }, [electionId, serverUrl, candidates]);
+  }, [electionId, serverUrl]);
 
   const handleAddCandidate = async (newCandidate) => {
     try {

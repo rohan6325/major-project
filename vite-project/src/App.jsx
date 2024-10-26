@@ -1,6 +1,6 @@
 // App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Overview from "./pages/Overview.jsx";
 import Sidemenu from "./components/sidebar.jsx";
 import VoterListPage from "./pages/voterlist.jsx";
@@ -17,6 +17,13 @@ function App() {
     isAuthenticated: false,
     role: "", // 'admin' or 'voter'
   });
+
+  useEffect(() => {
+    const storedAuth = JSON.parse(localStorage.getItem("auth"));
+    if (storedAuth) {
+      setAuth(storedAuth);
+    }
+  }, []);
 
   // Define route access configurations
   const routeConfig = {

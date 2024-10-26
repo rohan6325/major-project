@@ -1,25 +1,23 @@
 // AddCandidateModal.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 
 const AddCandidateModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    partyName: '',
-    avatarUrl: '/api/placeholder/40/40' // Default placeholder
+    candidate_name: '',
+    party_name: '',
+    // avatarUrl: '' // Default placeholder
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newId = `C${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
     onSubmit({
-      id: newId,
       ...formData
     });
     setFormData({
-      name: '',
-      partyName: '',
-      avatarUrl: '/api/placeholder/40/40'
+      candidate_name: '',
+      party_name: '',
+      // avatarUrl:''
     });
   };
 
@@ -57,8 +55,8 @@ const AddCandidateModal = ({ isOpen, onClose, onSubmit }) => {
                     id="name"
                     className="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
                     required
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    value={formData.candidate_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, candidate_name: e.target.value }))}
                   />
                 </div>
 
@@ -70,8 +68,8 @@ const AddCandidateModal = ({ isOpen, onClose, onSubmit }) => {
                     id="partyName"
                     className="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
                     required
-                    value={formData.partyName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, partyName: e.target.value }))}
+                    value={formData.party_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, party_name: e.target.value }))}
                   />
                 </div>
 
