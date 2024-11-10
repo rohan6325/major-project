@@ -10,6 +10,7 @@ import VotecastPage from "./pages/votecast.jsx";
 import ProtectedRoute from "./PrivateRoute.jsx";
 import SuccPage from "./pages/success.jsx";
 import SignIn from "./pages/authentication.jsx";
+import LandingPage from "./pages/landing.jsx"; // Import the LandingPage component
 
 function App() {
   // Replace with actual authentication logic
@@ -43,6 +44,7 @@ function App() {
       {!auth.isAuthenticated ? (
         <Routes>
           <Route path="/signin" element={<SignIn setAuth={setAuth} />} />
+          <Route path="/" element={<LandingPage />} /> {/* Add LandingPage route */}
           <Route path="*" element={<Navigate to="/signin" />} />
         </Routes>
       ) : (
