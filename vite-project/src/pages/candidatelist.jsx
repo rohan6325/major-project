@@ -18,7 +18,7 @@ const CandidateListPage = () => {
         const response = await axios.get(`${serverUrl}/api/candidates/${electionId}`);
         setCandidates(response.data.candidates);
       } catch (error) {
-        setError('Failed to fetch candidates. Please try again.');
+        setError('Failed to fetch candidates. Please try again.'+error);
       } finally {
         setLoading(false);
       }
@@ -35,7 +35,7 @@ const CandidateListPage = () => {
       setCandidates([...candidates, response.data]);
       setIsModalOpen(false);
     } catch (error) {
-      setError('Failed to add candidate. Please try again.');
+      setError('Failed to add candidate. Please try again.'+error);
     }
   };
 

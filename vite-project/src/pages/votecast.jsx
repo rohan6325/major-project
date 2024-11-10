@@ -6,8 +6,9 @@ const VotingInterface = () => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const voterId = localStorage.getItem("voter_id")
+  const voterId = localStorage.getItem("voter_id");
   const serverUrl = import.meta.env.VITE_SERVER_URL;
+
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
@@ -19,7 +20,7 @@ const VotingInterface = () => {
           setError(data.error || "Failed to load candidates.");
         }
       } catch (err) {
-        setError("An error occurred while fetching candidates.");
+        setError("An error occurred while fetching candidates."+err);
       } finally {
         setLoading(false);
       }
@@ -27,6 +28,36 @@ const VotingInterface = () => {
 
     fetchCandidates();
   }, [voterId, serverUrl]);
+
+  const handleVote = async () => {
+    if (selectedCandidate === null) return;
+
+    // Create a one-hot encoded vector
+    const voteVector = candidates.map(candidate => candidate.id === selectedCandidate ? 1 : 0);
+    console.log("Vote vector:", voteVector);
+    try {
+      const response = await fetch(`${serverUrl}/api/election/castVote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          voterId,
+          electionId: "example-election-id",
+          voteVector,  // Send one-hot vector to backend
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log("Vote cast successfully:", data);
+      } else {
+        console.error("Failed to cast vote:", data.message || "Unknown error");
+      }
+    } catch (error) {
+      console.error("Error casting vote:", error);
+    }
+  };
 
   return (
     <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
@@ -105,6 +136,7 @@ const VotingInterface = () => {
 
               <div className="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-t border-gray-200">
                 <button
+                  onClick={handleVote}
                   className={`py-3 px-4 w-full inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent ${
                     selectedCandidate
                       ? "bg-blue-500 text-white hover:bg-blue-600"

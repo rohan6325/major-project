@@ -1,7 +1,6 @@
-Flask
-Flask-CORS
-python-dotenv
-supabase-py
-cryptography
-bcrypt
 phe
+supabase
+bcrypt
+flask
+python-dotenv
+cryptography

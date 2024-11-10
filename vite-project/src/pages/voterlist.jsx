@@ -13,18 +13,8 @@ const VoterListPage = () => {
   useEffect(() => {
     const fetchVoters = async () => {
       try {
-        const response = await axios.post(`${serverUrl}/api/voters`,{
-          election_id: electionId 
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json', // Ensure headers are set properly
-          }
-        }
-      );
-        const data = await response.json()
-        console.log(response)
-        console.log("Server response:", data);
+        const response = await axios.get(`${serverUrl}/api/voters/${electionId}`);
+        console.log("Server response:", response.data);
         setVoters(response.data.voters);
         return
       } catch (error) {
@@ -59,7 +49,7 @@ const VoterListPage = () => {
       });
 
       if (response.ok) {
-        setVoters(voters.filter((voter) => voter.voterId !== voterId));
+        setVoters(voters.filter((voter) => voter.voter_id !== voterId));
       } else {
         console.error("Failed to delete voter");
       }
@@ -76,7 +66,7 @@ const VoterListPage = () => {
     (voter) =>
       voter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       voter.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      voter.voterId.toLowerCase().includes(searchTerm.toLowerCase())
+      voter.voter_d.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -167,9 +157,9 @@ const VoterListPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredVoters.map((voter) => (
-                    <tr key={voter.voterId} className="hover:bg-gray-50">
+                    <tr key={voter.voter_id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                        {voter.voterId}
+                        {voter.voter_id}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                         {voter.name}
@@ -182,7 +172,7 @@ const VoterListPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <button
-                          onClick={() => handleDeleteVoter(voter.voterId)}
+                          onClick={() => handleDeleteVoter(voter.voter_id)}
                           className="inline-flex items-center gap-x-1 text-sm font-semibold rounded-lg border border-transparent bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:pointer-events-none px-3 py-2 transition-colors duration-200"
                         >
                           <Trash2 className="h-4 w-4" />
