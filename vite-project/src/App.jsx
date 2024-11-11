@@ -43,9 +43,9 @@ function App() {
       {/* If not authenticated, redirect to SignInPage */}
       {!auth.isAuthenticated ? (
         <Routes>
+           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn setAuth={setAuth} />} />
-          <Route path="/" element={<LandingPage />} /> {/* Add LandingPage route */}
-          <Route path="*" element={<Navigate to="/signin" />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       ) : (
         <div className="flex">
