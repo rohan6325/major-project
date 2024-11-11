@@ -5,7 +5,10 @@ const VotingInterface = () => {
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [voting, setVoting] = useState(false); // New loading state for voting
   const [error, setError] = useState(null);
+  const [votingStatus, setVotingStatus] = useState(null); // New state for feedback message
+  const [electionId, setElectionId] = useState(null);
   const voterId = localStorage.getItem("voter_id");
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -16,11 +19,14 @@ const VotingInterface = () => {
         const data = await response.json();
         if (response.ok) {
           setCandidates(data.candidates || []);
+          setElectionId(data.election_id);
+          console.log("Candidates loaded:", data.candidates);
+          console.log("Election ID:", data.election_id);
         } else {
           setError(data.error || "Failed to load candidates.");
         }
       } catch (err) {
-        setError("An error occurred while fetching candidates."+err);
+        setError("An error occurred while fetching candidates: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -34,7 +40,9 @@ const VotingInterface = () => {
 
     // Create a one-hot encoded vector
     const voteVector = candidates.map(candidate => candidate.id === selectedCandidate ? 1 : 0);
-    console.log("Vote vector:", voteVector);
+    setVoting(true); // Start voting loading state
+    setVotingStatus(null); // Clear any previous message
+
     try {
       const response = await fetch(`${serverUrl}/api/election/castVote`, {
         method: "POST",
@@ -43,19 +51,21 @@ const VotingInterface = () => {
         },
         body: JSON.stringify({
           voterId,
-          electionId: "example-election-id",
-          voteVector,  // Send one-hot vector to backend
+          electionId: electionId,
+          voteVector, // Send one-hot vector to backend
         }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        console.log("Vote cast successfully:", data);
+        setVotingStatus("Vote cast successfully!");
       } else {
-        console.error("Failed to cast vote:", data.message || "Unknown error");
+        setVotingStatus(`Failed to cast vote: ${data.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error("Error casting vote:", error);
+      setVotingStatus("Error casting vote: " + error.message);
+    } finally {
+      setVoting(false); // End voting loading state
     }
   };
 
@@ -138,15 +148,21 @@ const VotingInterface = () => {
                 <button
                   onClick={handleVote}
                   className={`py-3 px-4 w-full inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent ${
-                    selectedCandidate
+                    selectedCandidate && !voting
                       ? "bg-blue-500 text-white hover:bg-blue-600"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
-                  disabled={!selectedCandidate}
+                  disabled={!selectedCandidate || voting}
                 >
-                  Cast my Vote
+                  {voting ? "Submitting..." : "Cast my Vote"}
                 </button>
               </div>
+
+              {votingStatus && (
+                <p className="text-center p-4 text-green-500">
+                  {votingStatus}
+                </p>
+              )}
             </div>
           </div>
         </div>

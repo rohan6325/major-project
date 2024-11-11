@@ -424,7 +424,8 @@ def get_election_candidates(voter_id):
             'success': True,
             'candidates': candidates,
             'start_time': start_time,
-            'end_time': end_time
+            'end_time': end_time,
+            'election_id': election_id
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -613,34 +614,42 @@ def get_candidates(election_id):
 @app.route("/api/election/castVote", methods=["POST"])
 def cast_vote():
     data = request.get_json()
-    voter_id = data["voterId"]
-    election_id = data["electionId"]
-    vote_vector = data["voteVector"]  # Array of 0s and 1s
+    voter_id = data.get("voterId")
+    election_id = data.get("electionId")
+    vote_vector = data.get("voteVector")
+
+    if not voter_id or not election_id or not vote_vector:
+        return jsonify({"status": "error", "message": "Invalid input data."}), 400
 
     # Fetch the public key from the Voter table
-    voter = supabase.table('Voter').select('public_key').eq('voter_id', voter_id).single()
-    if not voter:
+    voter_response = supabase.table('Voter').select('public_key').eq('voter_id', voter_id).single().execute()
+    if not voter_response.data:
         return jsonify({"status": "error", "message": "Voter not found."}), 404
-    print(voter)
-    # Load the public key from the retrieved JSON
-    public_key_data = voter['public_key']
-    n = int(public_key_data['n'])
-    g = int(public_key_data['g'])
 
-    # Construct the Paillier public key
-    public_key = paillier.PaillierPublicKey(n, g)
+    # Extract the public key data
+    public_key_data =  json.loads(voter_response.data.get('public_key'))
+    print(public_key_data)
+    if not public_key_data:
+        return jsonify({"status": "error", "message": "Invalid public key data."}), 500
+
+    # Load the public key components for Paillier encryption
+    try:
+        n = int(public_key_data['n'])
+        g = int(public_key_data['g'])
+        public_key = paillier.PaillierPublicKey(n)
+    except ValueError:
+        return jsonify({"status": "error", "message": "Failed to load public key."}), 500
 
     # Encrypt each element in the vote vector
-    encrypted_vote_vector = [public_key.encrypt(vote) for vote in vote_vector]
+    try:
+        encrypted_vote_vector = [public_key.encrypt(vote) for vote in vote_vector]
+        encrypted_vote_vector_serialized = [str(vote.ciphertext()) for vote in encrypted_vote_vector]
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Encryption error: {str(e)}"}), 500
 
-    # Convert encrypted numbers to a serialized format (e.g., for JSON storage)
-    encrypted_vote_vector_serialized = [str(vote.ciphertext()) for vote in encrypted_vote_vector]
-
-    # Generate a random value (you can customize this)
-    random_value = str(random.randint(100000, 999999))
-
-    # Create a unique vote_id for this vote entry
+    # Generate unique vote ID and random value for this vote entry
     vote_id = str(uuid.uuid4())
+    random_value = str(random.randint(100000, 999999))
 
     # Insert the encrypted vote into the Votes table
     response = supabase.table('Votes').insert([{
@@ -651,18 +660,15 @@ def cast_vote():
         "random_value": random_value,
         "created_at": datetime.utcnow().isoformat()
     }]).execute()
-
-    # Check if the insertion was successful
-    if response.status_code != 201:
-        return jsonify({"status": "error", "message": "Failed to store vote."}), 500
-
+    print(response)
     # Return a response
     return jsonify({
         "status": "success",
         "message": "Vote successfully cast.",
         "encrypted_vote_vector": encrypted_vote_vector_serialized,
         "random_value": random_value,
-        "vote_id": vote_id
+        "vote_id": vote_id,
+        "election_id": election_id
     })
 
 if __name__ == '__main__':
