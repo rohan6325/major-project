@@ -33,6 +33,9 @@ const VotingInterface = () => {
           if (currentTime < startTime || currentTime > endTime) {
             setElectionEnded(true);
           }
+        } else if (response.status === 403) {
+          setVotingStatus("You have already voted in this election.");
+          setHasVoted(true);
         } else {
           setError(data.error || "Failed to load candidates.");
         }
@@ -72,9 +75,6 @@ const VotingInterface = () => {
       const data = await response.json();
       if (response.ok) {
         setVotingStatus("Vote cast successfully!");
-        setHasVoted(true);
-      } else if (response.status === 403) {
-        setVotingStatus("You have already voted in this election.");
         setHasVoted(true);
       } else {
         setVotingStatus(

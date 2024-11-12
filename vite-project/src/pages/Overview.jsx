@@ -3,32 +3,38 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelL
 
 const ElectionDashboard = () => {
   const [stats, setStats] = useState({
-    electionTitle: "Student Council Election 2024",
-    startDate: "21/03/2024",
-    endDate: "23/03/2024",
-    totalVoters: 10,
-    votersVoted: 7,
-    votingStats: [
-      { name: 'C1', votes: 10 },
-      { name: 'C2', votes: 5 },
-      { name: 'C3', votes: 7 },
-    ],
-    genderDistribution: [
-      { name: 'Male', value: 70 },
-      { name: 'Female', value: 18 },
-      { name: 'Others', value: 12 },
-    ]
+    electionTitle: "",
+    startDate: "",
+    endDate: "",
+    totalVoters: 0,
+    votersVoted: 0,
+    votingStats: [],
+    genderDistribution: [],
   });
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const electionId = localStorage.getItem('election_id');
+  const serverUrl = import.meta.env.VITE_SERVER_URL;
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        ...prev,
-        votersVoted: Math.min(prev.votersVoted + Math.floor(Math.random() * 2), prev.totalVoters)
-      }));
-    }, 3000);
+    // Fetch data from the API
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${serverUrl}/api/election/${electionId}/results`); // Replace with your API endpoint
+        if (!response.ok) {
+          throw new Error('Failed to fetch election data');
+        }
+        const data = await response.json();
+        console.log(data);
+        setStats(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
 
-    return () => clearInterval(interval);
+    fetchData();
   }, []);
 
   const COLORS = ['#4F46E5', '#38BDF8', '#94A3B8'];
@@ -45,6 +51,9 @@ const ElectionDashboard = () => {
       </text>
     );
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="w-full p-6 bg-white">

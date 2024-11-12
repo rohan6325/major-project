@@ -148,7 +148,7 @@ def serialize_private_key(private_key):
         'q': str(private_key.q)
     }).encode('utf-8')  # Convert to bytes for encryption
 
-def retrieve_private_key(election_id, supabase):
+def retrieve_private_key(election_id):
     """
     Retrieve and decrypt a private key for an election.
     """
@@ -344,7 +344,7 @@ def register_voter():
             'email': data['email'],
             'gender': data['gender'],
             'public_key': election_public_key,
-            'created_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now().isoformat()
         }
 
         # Insert into database
@@ -392,6 +392,7 @@ def get_voter_id():
 def get_election_candidates(voter_id):
     try:
         # Query the Voter table for the voter_id
+        
         voter_result = supabase.table('Voter').select('*').eq('voter_id', voter_id).execute()
         voter_data = voter_result.data
         
@@ -412,6 +413,12 @@ def get_election_candidates(voter_id):
         start_time = election_info.get('start_time')
         end_time = election_info.get('end_time')
 
+        # Check if the voter has already voted in this election
+        existing_vote = supabase.table('Votes').select('id').eq('voter_id', voter_id).eq('election_id', election_id).execute()
+
+        if existing_vote.data:
+            return jsonify({"status": "error", "message": "Voter has already cast a vote in this election."}), 403
+        
         # Query the Candidate table to find all candidates for the election_id
         candidates_result = supabase.table('Candidate').select('*').eq('election_id', election_id).execute()
         candidates = candidates_result.data
@@ -525,50 +532,8 @@ def get_candidates(election_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# @app.route('/api/vote/cast', methods=['POST'])
-# def cast_vote():
-#     data = request.json
-#     election_id = data.get('election_id')
-#     encrypted_vote = data.get('encrypted_vote')
-#     random_value = data.get('random_value')  # For vote verification
-    
-#     try:
-#         # Check if election is active
-#         election = supabase.table('Election')\
-#             .select('*')\
-#             .eq('election_id', election_id)\
-#             .execute()
-        
-#         if not election.data:
-#             return jsonify({'error': 'Election not found'}), 404
-        
-#         election = election.data[0]
-#         current_time = datetime.now()
-        
-#         if current_time < datetime.fromisoformat(election['start_time']) or \
-#            current_time > datetime.fromisoformat(election['end_time']):
-#             return jsonify({'error': 'Election is not active'}), 400
-        
-#         vote_data = {
-#             'vote_id': str(uuid.uuid4()),
-#             'election_id': election_id,
-#             'encrypted_vote': encrypted_vote,
-#             'random_value': random_value,
-#             'created_at': datetime.now().isoformat()
-#         }
-        
-#         result = supabase.table('Votes').insert(vote_data).execute()
-        
-#         return jsonify({
-#             'success': True,
-#             'vote_id': vote_data['vote_id']
-#         })
-    
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-
-# @app.route('/api/election/<election_id>/results', methods=['GET'])
-# def get_election_results(election_id):
+@app.route('/api/election/<election_id>/results', methods=['GET'])
+def get_election_results(election_id):
     try:
         # Get election details
         election = supabase.table('Election')\
@@ -578,9 +543,9 @@ def get_candidates(election_id):
         
         if not election.data:
             return jsonify({'error': 'Election not found'}), 404
-        
+
         election = election.data[0]
-        
+
         # Check if election has ended
         if datetime.now() < datetime.fromisoformat(election['end_time']):
             return jsonify({'error': 'Election is still ongoing'}), 403
@@ -590,22 +555,75 @@ def get_candidates(election_id):
             .select('*')\
             .eq('election_id', election_id)\
             .execute()
+        # private_key = retrieve_private_key(election_id)
+        public_key_data = json.loads(election['public_key'])
+        public_key = paillier.PaillierPublicKey(int(public_key_data['n']))
+
+        private_key_data = json.loads(retrieve_private_key(election_id).decode())
+        private_key = paillier.PaillierPrivateKey(
+            public_key,
+            int(private_key_data['p']),
+            int(private_key_data['q'])
+        )
+
+        total_voters_response = supabase.table('Voter').select('*').eq('public_key', election['public_key']).execute()
+        total_voters = len(total_voters_response.data)
+        voters_voted = len(votes.data)
+
+        # Retrieve candidates for the election
+        response = supabase.table('Candidate').select('*').eq('election_id', election_id).execute()
+        candidates = response.data
+        candidate_ids = {candidate['candidate_id']: candidate['name'] for candidate in candidates}
         
-        # In a real implementation, you would:
-        # 1. Load the private key securely
-        # 2. Decrypt all votes
-        # 3. Tally the results
-        # 4. Return the final count
+        # Initialize tally with candidate IDs set to zero
+        vote_tally = {candidate['name']: 0 for candidate in candidates}
+        # Calculate gender distribution
+        male_count = sum(1 for voter in total_voters_response.data if voter['gender'] == 'Male')
+        female_count = sum(1 for voter in total_voters_response.data if voter['gender'] == 'Female')
+        other_count = total_voters - male_count - female_count
+
+        # Process each encrypted vote
+        for vote in votes.data:
+            encrypted_vote_vector_serialized = json.loads(vote['encrypted_vote'])
+            
+            # Deserialize and reconstruct each EncryptedNumber
+            encrypted_vote_vector = [
+                paillier.EncryptedNumber(public_key, int(num))
+                for num in encrypted_vote_vector_serialized
+            ]
+            
+            # Decrypt each element in the vote vector
+            decrypted_vote_vector = [private_key.decrypt(encrypted_vote) for encrypted_vote in encrypted_vote_vector]
+            
+            # Identify the candidate index with the highest value
+            selected_candidate_index = decrypted_vote_vector.index(max(decrypted_vote_vector))
+            
+            # Map index to candidate ID and update tally
+            selected_candidate_id = list(candidate_ids.keys())[selected_candidate_index]
+            candidate_name = candidate_ids[selected_candidate_id]
+            vote_tally[candidate_name] += 1
+
+
+        # Construct voting statistics for each candidate
+        voting_stats = [{'name': candidate, 'votes': votes} for candidate, votes in vote_tally.items()]
         
-        # This is a placeholder response
+        # Construct gender distribution data
+        gender_distribution = [
+            {'name': 'Male', 'value': male_count},
+            {'name': 'Female', 'value': female_count},
+            {'name': 'Others', 'value': other_count}
+        ]
+
+        # Return the results
         return jsonify({
             'success': True,
-            'total_votes': len(votes.data),
-            'results': {
-                'candidate1': 0,
-                'candidate2': 0,
-                'candidate3': 0
-            }
+            'electionTitle': election['election_name'],
+            'startDate': datetime.strptime(election['start_time'], "%Y-%m-%dT%H:%M:%S").strftime("%d/%m/%Y"),
+            'endDate': datetime.strptime(election['end_time'], "%Y-%m-%dT%H:%M:%S").strftime("%d/%m/%Y"),
+            'totalVoters': total_voters,
+            'votersVoted': voters_voted,
+            'votingStats': voting_stats,
+            'genderDistribution': gender_distribution
         })
     
     except Exception as e:
@@ -620,7 +638,7 @@ def cast_vote():
 
     if not voter_id or not election_id or not vote_vector:
         return jsonify({"status": "error", "message": "Invalid input data."}), 400
-
+    
     # Fetch the public key from the Voter table
     voter_response = supabase.table('Voter').select('public_key').eq('voter_id', voter_id).single().execute()
     if not voter_response.data:
@@ -658,7 +676,7 @@ def cast_vote():
         "election_id": election_id,
         "encrypted_vote": encrypted_vote_vector_serialized,
         "random_value": random_value,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now().isoformat()
     }]).execute()
     print(response)
     # Return a response
