@@ -9,19 +9,30 @@ const VotingInterface = () => {
   const [error, setError] = useState(null);
   const [votingStatus, setVotingStatus] = useState(null); // New state for feedback message
   const [electionId, setElectionId] = useState(null);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [electionEnded, setElectionEnded] = useState(false);
   const voterId = localStorage.getItem("voter_id");
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
-        const response = await fetch(`${serverUrl}/api/election/candidates/${voterId}`);
+        const response = await fetch(
+          `${serverUrl}/api/election/candidates/${voterId}`
+        );
         const data = await response.json();
         if (response.ok) {
           setCandidates(data.candidates || []);
           setElectionId(data.election_id);
           console.log("Candidates loaded:", data.candidates);
           console.log("Election ID:", data.election_id);
+          const currentTime = new Date();
+          const startTime = new Date(data.start_time);
+          const endTime = new Date(data.end_time);
+
+          if (currentTime < startTime || currentTime > endTime) {
+            setElectionEnded(true);
+          }
         } else {
           setError(data.error || "Failed to load candidates.");
         }
@@ -39,7 +50,9 @@ const VotingInterface = () => {
     if (selectedCandidate === null) return;
 
     // Create a one-hot encoded vector
-    const voteVector = candidates.map(candidate => candidate.id === selectedCandidate ? 1 : 0);
+    const voteVector = candidates.map((candidate) =>
+      candidate.id === selectedCandidate ? 1 : 0
+    );
     setVoting(true); // Start voting loading state
     setVotingStatus(null); // Clear any previous message
 
@@ -59,8 +72,14 @@ const VotingInterface = () => {
       const data = await response.json();
       if (response.ok) {
         setVotingStatus("Vote cast successfully!");
+        setHasVoted(true);
+      } else if (response.status === 403) {
+        setVotingStatus("You have already voted in this election.");
+        setHasVoted(true);
       } else {
-        setVotingStatus(`Failed to cast vote: ${data.message || "Unknown error"}`);
+        setVotingStatus(
+          `Failed to cast vote: ${data.message || "Unknown error"}`
+        );
       }
     } catch (error) {
       setVotingStatus("Error casting vote: " + error.message);
@@ -68,6 +87,36 @@ const VotingInterface = () => {
       setVoting(false); // End voting loading state
     }
   };
+
+  if (hasVoted) {
+    return (
+      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
+        <div className="flex flex-col items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Your vote has been cast successfully!
+          </h2>
+          <p className="text-center text-gray-600">
+            Thank you for participating in the election.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (electionEnded) {
+    return (
+      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
+        <div className="flex flex-col items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Election has ended
+          </h2>
+          <p className="text-center text-gray-600">
+            The election has ended. You can no longer cast your vote.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
@@ -159,9 +208,7 @@ const VotingInterface = () => {
               </div>
 
               {votingStatus && (
-                <p className="text-center p-4 text-green-500">
-                  {votingStatus}
-                </p>
+                <p className="text-center p-4 text-green-500">{votingStatus}</p>
               )}
             </div>
           </div>

@@ -15,8 +15,8 @@ import LandingPage from "./pages/landing.jsx"; // Import the LandingPage compone
 function App() {
   // Replace with actual authentication logic
   const [auth, setAuth] = useState({
-    isAuthenticated: false,
-    role: "", // 'admin' or 'voter'
+    isAuthenticated: JSON.parse(localStorage.getItem("auth")) ? true: false,
+    role: JSON.parse(localStorage.getItem("auth"))?.role || "", // 'admin' or 'voter'
   });
 
   useEffect(() => {
@@ -37,7 +37,7 @@ function App() {
       defaultRoute: "/votecast",
     },
   };
-
+  console.log("auth:", auth);
   return (
     <BrowserRouter>
       {/* If not authenticated, redirect to SignInPage */}
