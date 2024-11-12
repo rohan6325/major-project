@@ -11,7 +11,7 @@ const ElectionDashboard = () => {
     votingStats: [],
     genderDistribution: [],
   });
-
+  const [electionOngoing, setElectionOngoing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const electionId = localStorage.getItem('election_id');
@@ -23,11 +23,14 @@ const ElectionDashboard = () => {
         const response = await fetch(`${serverUrl}/api/election/${electionId}/results`); // Replace with your API endpoint
         if (!response.ok) {
           throw new Error('Failed to fetch election data');
+        } else if (response.status === 403) {
+          setElectionOngoing(true);
+        } else {
+          const data = await response.json();
+          console.log(data);
+          setStats(data);
+          setLoading(false);
         }
-        const data = await response.json();
-        console.log(data);
-        setStats(data);
-        setLoading(false);
       } catch (err) {
         setError(err.message);
         setLoading(false);
@@ -54,6 +57,7 @@ const ElectionDashboard = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
+  if (electionOngoing) return <div className='font-bold'>Election is still ongoing. Results will be available after the election ends.</div>;
 
   return (
     <div className="w-full p-6 bg-white">

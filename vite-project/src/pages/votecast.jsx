@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, Circle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const VotingInterface = () => {
   const [candidates, setCandidates] = useState([]);
@@ -11,6 +12,7 @@ const VotingInterface = () => {
   const [electionId, setElectionId] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [electionEnded, setElectionEnded] = useState(false);
+  const navigate = useNavigate();
   const voterId = localStorage.getItem("voter_id");
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -88,6 +90,10 @@ const VotingInterface = () => {
     }
   };
 
+  const handleRedirect = () => {
+    navigate("/success"); // Redirect to the /success page
+  };
+
   if (hasVoted) {
     return (
       <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
@@ -98,6 +104,12 @@ const VotingInterface = () => {
           <p className="text-center text-gray-600">
             Thank you for participating in the election.
           </p>
+          <button
+            onClick={handleRedirect} // Handle redirect on button click
+            className="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            See Voting Confirmation
+          </button>
         </div>
       </div>
     );

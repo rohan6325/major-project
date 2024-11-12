@@ -384,9 +384,6 @@ def get_voter_id():
             return jsonify({'voter_id': voter['voter_id']}), 200  # Adjust according to your DB schema
         else:
             return jsonify({'error': 'Voter not found'}), 404
-
-# @app.route('/api/voter/<voter_id>', methods=['GET'])
-# def get_voter(voter_id):
     
 @app.route('/api/election/candidates/<voter_id>', methods=['GET'])
 def get_election_candidates(voter_id):
@@ -688,6 +685,51 @@ def cast_vote():
         "vote_id": vote_id,
         "election_id": election_id
     })
+
+@app.route('/api/vote/receipt/<voter_id>', methods=['GET'])
+def vote_receipt(voter_id):
+    try:
+        voter_result = supabase.table('Voter').select('*').eq('voter_id', voter_id).execute()
+        voter_data = voter_result.data
+        
+        if not voter_data:
+            return jsonify({'error': 'Voter not found'}), 404
+
+        voter_public_key = voter_data[0].get('public_key')
+
+        election_result = supabase.table('Election').select('election_id',"created_at").eq('public_key', voter_public_key).execute()
+        election_data = election_result.data
+
+        if not election_data:
+            return jsonify({'error': 'Election not found'}), 404
+        
+        election_info = election_data[0]
+        election_id = election_info.get('election_id')
+        created_at = election_info.get('created_at')
+
+        # Check if the voter has already voted in this election
+        existing_vote = supabase.table('Votes').select('*').eq('voter_id', voter_id).eq('election_id', election_id).execute()
+
+        if not existing_vote.data:
+            return jsonify({"status": "error", "message": "No vote is present"}), 403
+        encrypted_vote = existing_vote.data[0]['encrypted_vote']
+
+        # You could choose to display a truncated version for user interface purposes
+        # For example, displaying the first 10 and last 10 characters
+        truncated_vote = encrypted_vote[:10] + '...' + encrypted_vote[-10:] if len(encrypted_vote) > 20 else encrypted_vote
+        # Return candidates along with election start and end times
+        return jsonify({
+            'success': True,
+            'vote_id': existing_vote.data[0]['vote_id'],
+            'voter_id': voter_id,
+            'name': voter_data[0]['name'],
+            'voted_for': truncated_vote,
+            'full_encrypted_vote': encrypted_vote,
+            'created_at': created_at,
+            'election_id': election_id
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
