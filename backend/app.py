@@ -4,6 +4,7 @@ from flask_cors import CORS
 from phe import paillier
 from datetime import datetime
 import os
+import pandas as pd
 from supabase import create_client, Client
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -354,6 +355,63 @@ def register_voter():
             'success': True,
             'message': 'Voter registered successfully',
             'voter_id': voter_data['voter_id']
+        })
+
+    except Exception as e:
+        print(f"Error: {str(e)}")  # For debugging
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/voter/bulk-register', methods=['POST'])
+def bulk_register_voters():
+    try:
+        # Check if the file is part of the request
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+        
+        # Read the Excel file into a pandas DataFrame
+        df = pd.read_excel(file)
+        
+        # Validate the DataFrame to ensure it has the necessary columns
+        required_columns = ['name', 'email', 'gender']
+        if not all(col in df.columns for col in required_columns):
+            return jsonify({'error': 'Missing required columns in the Excel file'}), 400
+        
+        # Extract the election public key
+        election_id = request.form.get('election_id')
+        election_result = supabase.table('Election') \
+            .select('public_key') \
+            .eq('election_id', election_id) \
+            .execute()
+        
+        if not election_result.data:
+            return jsonify({'error': 'Election not found'}), 404
+        
+        election_public_key = election_result.data[0]['public_key']
+
+        # Prepare the data to insert
+        voters_data = []
+        for index, row in df.iterrows():
+            voter_data = {
+                'voter_id': str(uuid.uuid4()),
+                'name': row['name'],
+                'email': row['email'],
+                'gender': row['gender'],
+                'public_key': election_public_key,
+                'created_at': datetime.now().isoformat()
+            }
+            voters_data.append(voter_data)
+        
+        # Insert data into the database
+        insert_result = supabase.table('Voter').insert(voters_data).execute()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Voters registered successfully',
+            'count': len(voters_data)
         })
 
     except Exception as e:

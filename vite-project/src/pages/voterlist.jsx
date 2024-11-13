@@ -7,6 +7,9 @@ const VoterListPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [voters, setVoters] = useState([]);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const serverUrl = import.meta.env.VITE_SERVER_URL;
   const electionId = localStorage.getItem("election_id");
   // Fetch voters from API when component loads
@@ -68,6 +71,35 @@ const VoterListPage = () => {
       voter.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       voter.voter_d.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      alert("Please select a file to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('election_id', electionId);
+
+    setUploading(true);
+    setUploadStatus("Uploading...");
+
+    try {
+      const response = await axios.post(`${serverUrl}/api/voter/bulk-register`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setUploadStatus(`${response.data.count} voters registered successfully!`);
+    } catch (error) {
+      setUploadStatus(`Error: ${error.response ? error.response.data.error : error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="px-4 py-10 sm:px-6 lg:px-8">
@@ -183,6 +215,7 @@ const VoterListPage = () => {
                   ))}
                 </tbody>
               </table>
+              <div className="px-4 py-10 sm:px-6 lg:px-8">
 
               {/* Pagination */}
               <div className="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-t border-gray-200">
@@ -239,6 +272,33 @@ const VoterListPage = () => {
                   </button>
                 </div>
               </div>
+                    {/* Upload Section */}
+      <div className="mb-6">
+        <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-gray-800">Bulk Voter Registration</h2>
+          <p className="text-sm text-gray-600 mt-1">Upload an Excel file to register multiple voters at once.</p>
+        </div>
+      </div>
+
+      {/* Upload Form */}
+      <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
+        <input
+          type="file"
+          accept=".xlsx, .xls"
+          onChange={handleFileChange}
+          disabled={uploading}
+        />
+        <button
+          className="ml-4 py-2 px-4 bg-blue-600 text-white rounded-lg"
+          onClick={handleUpload}
+          disabled={uploading}
+        >
+          {uploading ? 'Uploading...' : 'Upload'}
+        </button>
+      </div>
+
+      {uploadStatus && <p className="text-center text-lg text-gray-800">{uploadStatus}</p>}
+    </div>
             </div>
           </div>
         </div>
