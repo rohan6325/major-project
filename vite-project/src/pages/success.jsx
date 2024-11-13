@@ -151,7 +151,7 @@ const VoteConfirmation = () => {
             {/* Encryption Notice */}
             <div className="mt-6 text-center text-gray-600"> {/* Reduced margin top */}
               <p className="flex items-center justify-center gap-2">
-                Vote Encrypted Securely through Shadow Cipher
+                Vote Encrypted Securely through TruVote
                 <span role="img" aria-label="locked" className="text-xl">🔒</span>
               </p>
             </div>
