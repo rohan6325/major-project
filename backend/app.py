@@ -399,7 +399,7 @@ def bulk_register_voters():
                 'voter_id': str(uuid.uuid4()),
                 'name': row['name'],
                 'email': row['email'],
-                'gender': row['gender'],
+                'gender': row['gender'].lower().capitalize(),
                 'public_key': election_public_key,
                 'created_at': datetime.now().isoformat()
             }
@@ -682,7 +682,9 @@ def get_election_results(election_id):
             'totalVoters': total_voters,
             'votersVoted': voters_voted,
             'votingStats': voting_stats,
-            'genderDistribution': gender_distribution
+            'genderDistribution': gender_distribution,
+            "winner_name": max(vote_tally, key=vote_tally.get),
+            "winner_votes": max(vote_tally.values())
         })
     
     except Exception as e:

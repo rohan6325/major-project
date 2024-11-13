@@ -222,6 +222,13 @@ const ElectionDashboard = () => {
         </div>
       </div>
 
+       {/* Winner Section */}
+    <div className="bg-yellow-50 p-6 mb-8 rounded-lg text-center">
+      <h2 className="text-xl font-semibold text-yellow-800 mb-2">The Winner</h2>
+      <p className="text-3xl font-bold text-yellow-600">{stats.winner_name}</p>
+      <p className="text-lg text-gray-700">Votes: {stats.winner_votes}</p>
+    </div>
+
       {/* Charts */}
       <div className="space-y-8">
         {/* Voting Statistics */}
