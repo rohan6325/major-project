@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Share, Printer, Check } from 'lucide-react';
+import { Printer, Check } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
 const VoteConfirmation = () => {
-  const [showCopySuccess, setShowCopySuccess] = React.useState(false);
+  // const [showCopySuccess, setShowCopySuccess] = React.useState(false);
   const [voteData, setVoteData] = useState(null);  // State to store API response
   const contentRef = useRef(null);
   const timestampRef = useRef(null);
@@ -25,13 +25,30 @@ const VoteConfirmation = () => {
     fetchVoteData();
   }, []);
 
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setShowCopySuccess(true);
-      setTimeout(() => setShowCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+  // const handleShare = async () => {
+  //   try {
+  //     await navigator.clipboard.writeText(window.location.href);
+  //     setShowCopySuccess(true);
+  //     setTimeout(() => setShowCopySuccess(false), 2000);
+  //   } catch (err) {
+  //     console.error('Failed to copy:', err);
+  //   }
+  // };
+
+  const handleDownloadVote = () => {
+    if (voteData) {
+      // Assuming voteData contains the encrypted vote
+      const encryptedVote = voteData.full_encrypted_vote; // Replace with the actual key
+      const filename = `${voteData.voter_id}_encrypted_vote.txt`;
+      
+      // Create a Blob from the encrypted vote string
+      const blob = new Blob([encryptedVote], { type: 'text/plain' });
+      
+      // Create an anchor tag to trigger the download
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click(); // Programmatically click the link to trigger the download
     }
   };
 
@@ -122,7 +139,7 @@ const VoteConfirmation = () => {
 
             {/* Buttons */}
             <div className="flex gap-4 pt-4 print:hidden">
-              <button
+              {/* <button
                 onClick={handleShare}
                 className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
@@ -137,8 +154,14 @@ const VoteConfirmation = () => {
                     Share Link
                   </>
                 )}
+              </button> */}
+              <button
+                onClick={handleDownloadVote}
+                className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Check className="w-5 h-5 text-green-500" />
+                Download Encrypted Vote
               </button>
-
               <button
                 onClick={handlePrint}
                 className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors"

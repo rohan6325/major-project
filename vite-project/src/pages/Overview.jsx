@@ -23,10 +23,17 @@ const ElectionDashboard = () => {
     genderDistribution: [],
   });
   const [electionOngoing, setElectionOngoing] = useState(false);
+  const [electionHasNotStarted, setElectionHasNotStarted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [timeRemainingEnd, setTimeRemainingEnd] = useState(0);
+  const [votersVotedNow, setVotersVotedNow] = useState(0);
   const electionId = localStorage.getItem("election_id");
   const serverUrl = import.meta.env.VITE_SERVER_URL;
+
   useEffect(() => {
     // Fetch data from the API
     const fetchData = async () => {
@@ -34,8 +41,18 @@ const ElectionDashboard = () => {
         const response = await fetch(
           `${serverUrl}/api/election/${electionId}/results`
         ); // Replace with your API endpoint
+        const data = await response.json();
         if (!response.ok && response.status === 403) {
           setElectionOngoing(true);
+          setEndTime(data.end_time);
+          setVotersVotedNow(data.voters_voted);
+          setLoading(false);
+          return;
+        }
+
+        if (!response.ok && response.status === 402) {
+          setElectionHasNotStarted(true);
+          setStartTime(data.start_time);
           setLoading(false);
           return;
         }
@@ -43,7 +60,6 @@ const ElectionDashboard = () => {
         if (!response.ok) {
           throw new Error("Failed to fetch election data");
         }
-        const data = await response.json();
         console.log(data);
         setStats(data);
         setLoading(false);
@@ -55,6 +71,32 @@ const ElectionDashboard = () => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // Set up an interval to update the countdown every second
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      const remainingTime = startTime - currentTime;
+      const remainingTimeEnd = currentTime - endTime;
+      if (remainingTime <= 0) {
+        // If time is up, clear the interval
+        clearInterval(interval);
+        setTimeRemaining(0);
+      } else {
+        setTimeRemaining(remainingTime);
+      }
+
+      if (remainingTimeEnd<=0) {
+        clearInterval(interval);
+        setTimeRemainingEnd(0);
+      } else {
+        setTimeRemainingEnd(remainingTimeEnd);
+      }
+    }, 1000);
+
+    // Clean up interval when the component unmounts
+    return () => clearInterval(interval);
+  }, [startTime,endTime]);
 
   const COLORS = ["#4F46E5", "#38BDF8", "#94A3B8"];
   const RADIAN = Math.PI / 180;
@@ -86,6 +128,32 @@ const ElectionDashboard = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
+
+  const formatTime = (ms) => {
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  if (electionHasNotStarted) {
+    return (
+      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
+      <div className="flex flex-col items-center gap-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Election has not started yet.
+        </h2>
+        <p className="text-center text-gray-600">
+          Please check back after the election starts.
+        </p>
+        <p className="text-center text-gray-600 mt-4">
+          Time remaining until election: <span className="font-bold">{formatTime(timeRemaining)}</span>
+        </p>
+      </div>
+    </div>
+    );
+  }
   if (electionOngoing)
     return (
       <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 mx-auto">
@@ -103,6 +171,12 @@ const ElectionDashboard = () => {
               Your browser does not support the video tag.
             </video>
           </div>
+          <p className="text-center text-gray-600 mt-4">
+          Time remaining until election ends: <span className="font-bold">{formatTime(timeRemainingEnd)}</span>
+          </p>
+          <p className="text-center text-gray-600 mt-4">
+            Voters voted now: <span className="font-bold">{votersVotedNow}</span>
+          </p>
         </div>
       </div>
     );

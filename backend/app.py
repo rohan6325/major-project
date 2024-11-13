@@ -223,10 +223,10 @@ def create_admin():
         result = supabase.table('Admin').insert(admin_data).execute()
 
         # Check if the insertion was successful
-        if result.get('status_code', 200) == 200:
-            return jsonify({'success': True}), 201
-        else:
-            return jsonify({'error': 'Failed to create admin account'}), 500
+        # if not result.data:
+        #     return jsonify({'error': 'Failed to create admin account'}), 500
+        
+        return jsonify({'success': True}), 201
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -542,17 +542,21 @@ def get_election_results(election_id):
             return jsonify({'error': 'Election not found'}), 404
 
         election = election.data[0]
-
-        # Check if election has ended
-        if datetime.now() < datetime.fromisoformat(election['end_time']):
-            return jsonify({'error': 'Election is still ongoing'}), 403
         
+        # Check if election has started
+        if datetime.now() < datetime.fromisoformat(election['start_time']):
+            return jsonify({'error': 'Election has not started yet', "start_time":datetime.fromisoformat(election['start_time'])}), 402
+
         # Get all votes for this election
         votes = supabase.table('Votes')\
             .select('*')\
             .eq('election_id', election_id)\
             .execute()
-        # private_key = retrieve_private_key(election_id)
+        
+        # Check if election has ended
+        if datetime.now() < datetime.fromisoformat(election['end_time']):
+            return jsonify({'error': 'Election is still ongoing', "voters_voted":len(votes.data), "end_time": datetime.fromisoformat(election['end_time'])  }), 403
+
         public_key_data = json.loads(election['public_key'])
         public_key = paillier.PaillierPublicKey(int(public_key_data['n']))
 
