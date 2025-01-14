@@ -795,5 +795,110 @@ def vote_receipt(voter_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/vote/decrypt', methods=['POST'])
+def decrypt_vote():
+    try:
+        # Log incoming request
+        print("Received decrypt request")
+        
+        # Get and validate request data
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No request data provided'}), 400
+            
+        encrypted_vote = data.get('encrypted_vote')
+        election_id = data.get('election_id')
+        
+        # Log request data
+        print(f"Election ID: {election_id}")
+        print(f"Encrypted vote: {encrypted_vote}")
+        
+        if not encrypted_vote or not election_id:
+            return jsonify({'error': 'Missing required parameters'}), 400
+            
+        # Parse the encrypted vote if it's a string
+        if isinstance(encrypted_vote, str):
+            try:
+                encrypted_vote = json.loads(encrypted_vote)
+            except json.JSONDecodeError as e:
+                return jsonify({'error': f'Invalid encrypted vote format: {str(e)}'}), 400
+            
+        # Get election public key
+        election_result = supabase.table('Election')\
+            .select('public_key')\
+            .eq('election_id', election_id)\
+            .execute()
+            
+        if not election_result.data:
+            return jsonify({'error': 'Election not found'}), 404
+            
+        # Parse the public key
+        try:
+            public_key_data = json.loads(election_result.data[0]['public_key'])
+            public_key = paillier.PaillierPublicKey(int(public_key_data['n']))
+        except Exception as e:
+            print(f"Error parsing public key: {str(e)}")
+            return jsonify({'error': 'Invalid public key format'}), 500
+        
+        # Get and parse the private key
+        try:
+            private_key_data = json.loads(retrieve_private_key(election_id).decode())
+            private_key = paillier.PaillierPrivateKey(
+                public_key,
+                int(private_key_data['p']),
+                int(private_key_data['q'])
+            )
+        except Exception as e:
+            print(f"Error retrieving/parsing private key: {str(e)}")
+            return jsonify({'error': 'Error accessing private key'}), 500
+        
+        # Reconstruct EncryptedNumber objects
+        try:
+            encrypted_numbers = [
+                paillier.EncryptedNumber(public_key, int(num))
+                for num in encrypted_vote
+            ]
+        except Exception as e:
+            print(f"Error reconstructing encrypted numbers: {str(e)}")
+            return jsonify({'error': 'Invalid encrypted vote data'}), 400
+        
+        # Decrypt each number in the vector
+        try:
+            decrypted_vote_vector = [
+                private_key.decrypt(encrypted_num)
+                for encrypted_num in encrypted_numbers
+            ]
+        except Exception as e:
+            print(f"Error decrypting vote vector: {str(e)}")
+            return jsonify({'error': 'Failed to decrypt vote'}), 500
+        
+        # Get candidates
+        candidates_result = supabase.table('Candidate')\
+            .select('*')\
+            .eq('election_id', election_id)\
+            .execute()
+            
+        candidates = candidates_result.data
+        
+        # Find the selected candidate
+        selected_index = decrypted_vote_vector.index(max(decrypted_vote_vector))
+        selected_candidate = candidates[selected_index] if selected_index < len(candidates) else None
+        
+        # Prepare and return response
+        response_data = {
+            'success': True,
+            'decrypted_vector': decrypted_vote_vector,
+            'selected_candidate': {
+                'name': selected_candidate['name'],
+                'party': selected_candidate['party_name']
+            } if selected_candidate else None
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

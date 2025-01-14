@@ -11,6 +11,7 @@ import ProtectedRoute from "./PrivateRoute.jsx";
 import SuccPage from "./pages/success.jsx";
 import SignIn from "./pages/authentication.jsx";
 import LandingPage from "./pages/landing.jsx"; // Import the LandingPage component
+import verifyvote from "./pages/verifyvote.jsx";
 
 function App() {
   // Replace with actual authentication logic
@@ -132,6 +133,18 @@ function App() {
                   />
                 }
               />
+              <Route
+                path="/verifyvote"
+                element={
+                  <ProtectedRoute
+                    element={verifyvote}
+                    isAuthenticated={auth.isAuthenticated}
+                    requiredRole="voter"
+                    userRole={auth.role}
+                  />
+                }
+              />
+         
             </Routes>
           </main>
         </div>
